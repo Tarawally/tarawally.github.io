@@ -1,46 +1,63 @@
-name: Sync Documentation
+name: Sync Fluid Docs
+
 on:
   repository_dispatch:
     types: [docs_updated]
   workflow_dispatch:
 
 jobs:
-  sync:
+  sync-and-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Garden
-        uses: actions/checkout@v4
+      - name: Checkout Digital Garden
+        uses: actions/checkout@v3
         with:
-          ref: v4 # Ensure we are on the correct branch
+          path: garden
 
-      - name: Checkout Docs
-        uses: actions/checkout@v4
+      - name: Checkout Fluid Repo
+        uses: actions/checkout@v3
         with:
           repository: Tarawally/fluid-light-transport
-          path: fluid-light-transport
+          path: fluid
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: 22
+          node-version: '18'
 
-      - name: Setup Quarto
+      - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: pre-release
 
-      - name: Render Quarto
+      - name: Build Quarto Book
+        working-directory: fluid/docs
         run: |
-          cd fluid-light-transport/docs
           quarto render
 
-      - name: Copy Assets
+      - name: Prepare Directories
+        working-directory: garden
         run: |
-          mkdir -p quartz/static/fluid-light-transport
-          cp -r fluid-light-transport/docs/_site/* quartz/static/fluid-light-transport/
+          mkdir -p content/fluid-light-transport
+          mkdir -p static/fluid-book
 
-      - name: Commit and Push
+      - name: Synchronise Static Assets
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add quartz/static/fluid-light-transport
-          git commit -m "chore: sync fluid-light-transport documentation" || echo "No changes to commit"
+          # Copy the built Quarto site to the static folder of the garden
+          cp -r fluid/docs/_site/* garden/static/fluid-book/
+
+      - name: Run Conversion Script
+        run: |
+          # Transform .qmd to .md with iframe embeddings
+          # The script is located in the fluid repo but we run it to output to garden
+          node fluid/scripts/sync-to-quartz.js garden/content/fluid-light-transport
+
+      - name: Commit and Push Changes
+        working-directory: garden
+        run: |
+          git config user.name "Garden Bot"
+          git config user.email "bot@digitalgarden.io"
+          git add content/fluid-light-transport static/fluid-book
+          # Commit using conventional commits
+          git commit -m "feat(content): synchronise fluid-light-transport docs" || echo "No changes to commit"
           git push

@@ -21,7 +21,10 @@ export const defaultContentPageLayout: PageLayout = {
       component: Component.Breadcrumbs(),
       condition: (page) => page.fileData.slug !== "index",
     }),
-    Component.ArticleTitle(),
+    Component.ConditionalRender({
+      component: Component.ArticleTitle(),
+      condition: (page) => page.fileData.frontmatter.layout !== "fluid-notebook",
+    }),
     Component.ContentMeta(),
     Component.TagList(),
   ],
@@ -42,7 +45,12 @@ export const defaultContentPageLayout: PageLayout = {
   ],
   right: [
     Component.Graph(),
-    Component.DesktopOnly(Component.TableOfContents()),
+    Component.DesktopOnly(
+      Component.ConditionalRender({
+        component: Component.TableOfContents(),
+        condition: (page) => page.fileData.frontmatter.layout !== "fluid-notebook",
+      })
+    ),
     Component.Backlinks(),
   ],
 }
