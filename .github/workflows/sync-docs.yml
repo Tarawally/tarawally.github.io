@@ -1,0 +1,46 @@
+name: Sync Documentation
+on:
+  repository_dispatch:
+    types: [docs_updated]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Garden
+        uses: actions/checkout@v4
+        with:
+          ref: v4 # Ensure we are on the correct branch
+
+      - name: Checkout Docs
+        uses: actions/checkout@v4
+        with:
+          repository: Tarawally/fluid-light-transport
+          path: fluid-light-transport
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render Quarto
+        run: |
+          cd fluid-light-transport/docs
+          quarto render
+
+      - name: Copy Assets
+        run: |
+          mkdir -p quartz/static/fluid-light-transport
+          cp -r fluid-light-transport/docs/_site/* quartz/static/fluid-light-transport/
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add quartz/static/fluid-light-transport
+          git commit -m "chore: sync fluid-light-transport documentation" || echo "No changes to commit"
+          git push

@@ -7,6 +7,12 @@ const emitThemeChangeEvent = (theme: "light" | "dark") => {
     detail: { theme },
   })
   document.dispatchEvent(event)
+
+  // Sync with iframes
+  const iframes = document.querySelectorAll("iframe")
+  iframes.forEach((iframe) => {
+    iframe.contentWindow?.postMessage({ type: "themechange", theme }, "*")
+  })
 }
 
 document.addEventListener("nav", () => {

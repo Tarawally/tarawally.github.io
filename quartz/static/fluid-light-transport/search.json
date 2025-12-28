@@ -1,0 +1,322 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Hybrid Fluid-Light Transport Engine",
+    "section": "",
+    "text": "Preface\nThis document provides a Guided Technical Walkthrough of the Hybrid Fluid-Light Transport engine.\nRather than focusing on jargon, we explore the underlying architecture. We build our understanding from the first principles of digital rasterisation to the complex simulation of non-linear light transport.",
+    "crumbs": [
+      "Preface"
+    ]
+  },
+  {
+    "objectID": "index.html#the-graphics-dichotomy",
+    "href": "index.html#the-graphics-dichotomy",
+    "title": "Hybrid Fluid-Light Transport Engine",
+    "section": "The Graphics Dichotomy",
+    "text": "The Graphics Dichotomy\nIn real-time computer graphics, we typically face a choice:\n\nRay Tracing: Offers extreme precision (like real-world light) but is computationally expensive, especially for soft, diffuse effects.\nRasterisation: The standard for games; it is incredibly fast but struggles with complex “global illumination” (how light bounces around).\n\nThis book explores a “third way”: Hybrid Fluid-Light Transport. We treat light not merely as rays, but as a fluid substance that flows across the scene. This yields beautiful, organic lighting at a fraction of the cost.",
+    "crumbs": [
+      "Preface"
+    ]
+  },
+  {
+    "objectID": "index.html#the-goal",
+    "href": "index.html#the-goal",
+    "title": "Hybrid Fluid-Light Transport Engine",
+    "section": "The Goal",
+    "text": "The Goal\nWe aim to demystify the following code:\n/**\n * @fileoverview Hybrid Fluid-Light Transport Engine.\n * This technique creates soft shadows, colour bleeding, and ambient occlusion\n * purely through 2D pixel-neighbour interactions.\n */\nBy the end of this book, you will understand exactly what that means and how to implement it.",
+    "crumbs": [
+      "Preface"
+    ]
+  },
+  {
+    "objectID": "index.html#how-to-read-this-book",
+    "href": "index.html#how-to-read-this-book",
+    "title": "Hybrid Fluid-Light Transport Engine",
+    "section": "How to Read This Book",
+    "text": "How to Read This Book\n\nThe Digital Canvas: We start with the screen itself.\nThe Logic: We learn the grammar of JavaScript.\nThe Memory: We explore how computers remember things.\nThe Maths: We discover how to measure space.\nThe Physics: We simulate the behaviour of light.\n\nLet us begin our journey.",
+    "crumbs": [
+      "Preface"
+    ]
+  },
+  {
+    "objectID": "01_canvas.html",
+    "href": "01_canvas.html",
+    "title": "The Digital Canvas",
+    "section": "",
+    "text": "The Pixel\nBefore painting with light, we must understand our canvas.\nScreens comprise millions of tiny squares called Pixels (Picture Elements). Each pixel is not a single colour but a blend of three primary lights: Red, Green, and Blue (RGB).",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>The Digital Canvas</span>"
+    ]
+  },
+  {
+    "objectID": "01_canvas.html#the-pixel",
+    "href": "01_canvas.html#the-pixel",
+    "title": "The Digital Canvas",
+    "section": "",
+    "text": "NoteDeep Dive: Additive Colour\n\n\n\n\n\nUnlike mixing paint (where red + blue = purple), mixing light is additive. * Red + Green = Yellow * Red + Blue = Magenta * Green + Blue = Cyan * Red + Green + Blue = White",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>The Digital Canvas</span>"
+    ]
+  },
+  {
+    "objectID": "01_canvas.html#the-cartesian-grid",
+    "href": "01_canvas.html#the-cartesian-grid",
+    "title": "The Digital Canvas",
+    "section": "The Cartesian Grid",
+    "text": "The Cartesian Grid\nIn mathematics, graphs typically place \\((0,0)\\) in the centre with \\(Y\\) increasing upwards. Computer graphics differ:\n\nThe Origin \\((0,0)\\) sits at the Top-Left corner.\nX increases to the Right.\nY increases Downwards.\n\n\n\nCode\nPlot.plot({\n  grid: true,\n  x: {axis: \"top\", label: \"X Axis →\"},\n  y: {axis: \"left\", label: \"↓ Y Axis\"},\n  domain: [0, 10],\n  marks: [\n    Plot.frame(),\n    Plot.text([{x: 1, y: 1}], {text: \"(1, 1)\", x: \"x\", y: \"y\", dx: 15, dy: 15}),\n    Plot.dot([{x: 1, y: 1}], {x: \"x\", y: \"y\", fill: \"red\", r: 5}),\n    Plot.text([{x: 5, y: 5}], {text: \"(5, 5)\", x: \"x\", y: \"y\", dx: 15, dy: 15}),\n    Plot.dot([{x: 5, y: 5}], {x: \"x\", y: \"y\", fill: \"blue\", r: 5})\n  ]\n})",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>The Digital Canvas</span>"
+    ]
+  },
+  {
+    "objectID": "01_canvas.html#the-canvas-element",
+    "href": "01_canvas.html#the-canvas-element",
+    "title": "The Digital Canvas",
+    "section": "The Canvas Element",
+    "text": "The Canvas Element\nWe access this grid via the HTML5 Canvas API using the &lt;canvas&gt; element.\n&lt;!-- MAIN RENDERING SURFACE --&gt;\n&lt;canvas id=\"canvas\" tabindex=\"0\"&gt;&lt;/canvas&gt;\nIn src/engine.js, we establish a connection to this element to draw upon it.\n// Canvas Context configuration\nconst canvas = document.getElementById('canvas');\nconst ctx = canvas.getContext('2d', {\n  alpha: false,\n  willReadFrequently: true,\n});\nThe context (ctx) is our tool for modifying the canvas.\n\n\n\n\n\n\nTipPerformance: Resizing\n\n\n\nResizing the browser window is computationally expensive. Our engine employs a debounce function to ensure the grid is only recalculated once the user stops adjusting the window, preventing the simulation from freezing.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>The Digital Canvas</span>"
+    ]
+  },
+  {
+    "objectID": "02_logic.html",
+    "href": "02_logic.html",
+    "title": "The Language of Logic",
+    "section": "",
+    "text": "Variables: The Boxes of Memory\nTo control pixels, we must speak the computer’s language. Here, that language is JavaScript.\nImagine a warehouse of empty boxes. We can label a box and store items inside. In programming, we call this a Variable.",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>The Language of Logic</span>"
+    ]
+  },
+  {
+    "objectID": "02_logic.html#variables-the-boxes-of-memory",
+    "href": "02_logic.html#variables-the-boxes-of-memory",
+    "title": "The Language of Logic",
+    "section": "",
+    "text": "const: A box whose contents cannot be changed (Constant).\nlet: A box whose contents can be changed.\n\n\"use strict\"; /* Enforce stricter parsing and error handling */\n\n/* Configuration constants for the simulation. */\nconst CONFIG = {\n  TILE_SIZE: 4,      // We process pixels in 4x4 blocks\n  DISSIPATION: 0.97, // Energy lost per tick\n};\n\nlet TOTAL_PIXELS = 0; // This updates when the window resizes",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>The Language of Logic</span>"
+    ]
+  },
+  {
+    "objectID": "02_logic.html#functions-the-recipes",
+    "href": "02_logic.html#functions-the-recipes",
+    "title": "The Language of Logic",
+    "section": "Functions: The Recipes",
+    "text": "Functions: The Recipes\nA function is a bundle of instructions. Like a recipe, you give it a name and “call” it to execute those instructions.\nOur engine uses bootSystem to initialise the environment.\n/**\n * Allocates memory and sets grid dimensions based on the current window size.\n */\nfunction bootSystem() {\n  // 1. Calculate internal resolution\n1  RESOLUTION.W = Math.ceil(window.innerWidth / CONFIG.DOWNSAMPLE);\n  // ... more instructions ...\n}\n\n1\n\nMath.ceil rounds the number up to the nearest integer. We cannot have half a pixel!",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>The Language of Logic</span>"
+    ]
+  },
+  {
+    "objectID": "02_logic.html#loops-repetition",
+    "href": "02_logic.html#loops-repetition",
+    "title": "The Language of Logic",
+    "section": "Loops: Repetition",
+    "text": "Loops: Repetition\nComputers excel at repetition. We use a Loop to repeat instructions.\nThe common for loop states: “Start here, continue whilst this is true, and perform this action after each step.”\n// Iterate over every pixel in a row\nfor (let x = 0; x &lt; width; x++) {\n    // Process pixel at 'x'\n}",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>The Language of Logic</span>"
+    ]
+  },
+  {
+    "objectID": "02_logic.html#conditionals-making-decisions",
+    "href": "02_logic.html#conditionals-making-decisions",
+    "title": "The Language of Logic",
+    "section": "Conditionals: Making Decisions",
+    "text": "Conditionals: Making Decisions\nWe often adapt behaviour based on the situation using if statements.\nif (energy &lt; 0.001) {\n    // If energy is negligible, stop processing to conserve battery\n    continue;\n}",
+    "crumbs": [
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>The Language of Logic</span>"
+    ]
+  },
+  {
+    "objectID": "03_memory.html",
+    "href": "03_memory.html",
+    "title": "Memory & Data",
+    "section": "",
+    "text": "The State\nSimulating reality requires storing vast amounts of information. Every pixel must know its colour, light velocity, and whether it represents a wall or empty air.\nWe call the sum of this information the State. In our engine, state resides in RAM (Random Access Memory).",
+    "crumbs": [
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Memory & Data</span>"
+    ]
+  },
+  {
+    "objectID": "03_memory.html#arrays-the-shelf",
+    "href": "03_memory.html#arrays-the-shelf",
+    "title": "Memory & Data",
+    "section": "Arrays: The Shelf",
+    "text": "Arrays: The Shelf\nThe most efficient way to store a list in a computer is an Array. Picture an array as a long shelf where every item has a specific number (an index).",
+    "crumbs": [
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Memory & Data</span>"
+    ]
+  },
+  {
+    "objectID": "03_memory.html#structure-of-arrays-soa",
+    "href": "03_memory.html#structure-of-arrays-soa",
+    "title": "Memory & Data",
+    "section": "Structure of Arrays (SoA)",
+    "text": "Structure of Arrays (SoA)\nProgrammers might typically create an Object for every pixel:\n// Array of Structures (AoS) - SLOW\nlet pixel = { red: 1.0, green: 0.5, velocityX: 0.1 };\nHowever, managing 200,000 objects is slow. Every time the computer seeks a new object, it may look in a completely different memory location. This is a Cache Miss, a primary cause of software sluggishness.\nInstead, we use a single massive array of numbers and use Offsets to locate data. This Structure of Arrays (SoA) layout keeps related data tightly packed, which the CPU prefers.\n\n\n\n\n\n\nNoteAnalogy: The Library Shelf\n\n\n\n\n\nImagine a library. * AoS: Books are organised by Author. To find all red books, you must check every aisle. * SoA: Books are organised by Colour. All red books sit on one shelf, allowing you to grab them instantly.\n\n\n\nIn src/engine.js, we define these “shelves” using the FIELD constant.\n/**\n * Memory layout offsets.\n * Access a pixel's property by: index = (y * width + x) * STRIDE + OFFSET.\n */\nconst FIELD = {\n  R: 0,\n  G: 1,\n  B: 2, // Spectral Energy (Colour)\n  VEL_X: 4,\n  VEL_Y: 5, // Momentum Vector (Flow direction)\n  DEPTH: 7, // Distance from camera (Topology)\n};\n\nconst STRIDE = 14; // Total slots per pixel\nWe allocate one giant block of memory for the entire universe:\nState.lattice = new Float32Array(TOTAL_PIXELS * STRIDE);\nFloat32Array is a TypedArray that stores only decimal numbers. It is extremely fast.",
+    "crumbs": [
+      "<span class='chapter-number'>3</span>  <span class='chapter-title'>Memory & Data</span>"
+    ]
+  },
+  {
+    "objectID": "04_math.html",
+    "href": "04_math.html",
+    "title": "The Maths of Space",
+    "section": "",
+    "text": "Vectors: Arrows in Space\nTo simulate light, we must describe location and movement using Vectors.\nA Vector is simply an arrow with: 1. Origin: Where it starts. 2. Direction: Which way it points. 3. Magnitude: How long it is.\nIn our 2D grid, a vector is often just two numbers: \\((x, y)\\).",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>The Maths of Space</span>"
+    ]
+  },
+  {
+    "objectID": "04_math.html#vectors-arrows-in-space",
+    "href": "04_math.html#vectors-arrows-in-space",
+    "title": "The Maths of Space",
+    "section": "",
+    "text": "\\((1, 0)\\) points Right.\n\\((0, 1)\\) points Down.\n\\((-1, 0)\\) points Left.\n\n\nNormalisation\nSometimes we care only about direction, not length. If we shrink a vector so its length is exactly \\(1.0\\), we call it a Unit Vector or say it is Normalised.\nNormalising a vector is like noting the direction a finger points, whilst ignoring the finger’s length.\n\n\nCode\nviewof vectorX = Inputs.range([-1, 1], {value: 1, step: 0.1, label: \"X\"})\nviewof vectorY = Inputs.range([-1, 1], {value: 0.5, step: 0.1, label: \"Y\"})\n\nPlot.plot({\n  grid: true,\n  x: {domain: [-2, 2]},\n  y: {domain: [-2, 2]},\n  marks: [\n    Plot.frame(),\n    Plot.arrow([{x1: 0, y1: 0, x2: vectorX, y2: vectorY}], {x1: \"x1\", y1: \"y1\", x2: \"x2\", y2: \"y2\", stroke: \"red\", strokeWidth: 3}),\n    Plot.text([{x: vectorX, y: vectorY}], {text: `(${vectorX}, ${vectorY})`, dy: -10})\n  ]\n})",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>The Maths of Space</span>"
+    ]
+  },
+  {
+    "objectID": "04_math.html#distance-pythagoras",
+    "href": "04_math.html#distance-pythagoras",
+    "title": "The Maths of Space",
+    "section": "Distance (Pythagoras)",
+    "text": "Distance (Pythagoras)\nTo determine the distance of a light source, we use the Pythagorean Theorem:\n\\[ a^2 + b^2 = c^2 \\]\nOr in code:\nconst dist = Math.sqrt(x*x + y*y);\nWe use this in Scene.shade to calculate light fall-off over distance (Inverse Square Law).",
+    "crumbs": [
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>The Maths of Space</span>"
+    ]
+  },
+  {
+    "objectID": "05_raytracing.html",
+    "href": "05_raytracing.html",
+    "title": "Casting Rays",
+    "section": "",
+    "text": "Reverse Ray Tracing\nWith our grid (Canvas) and maths (Vectors) established, simulation begins. The first step is locating the light.\nIn reality, light travels from a bulb to your eye. In computer graphics, we work in reverse. We shoot a ray from the “Camera” (your eye) through every screen pixel to see what it strikes.\nsequenceDiagram\n    participant Camera\n    participant Screen\n    participant Sphere\n\n    Camera-&gt;&gt;Screen: Shoot Ray(x,y)\n    Screen-&gt;&gt;Sphere: Check Intersection\n    alt Hit\n        Sphere--&gt;&gt;Screen: Return Colour\n    else Miss\n        Sphere--&gt;&gt;Screen: Return Black\n    end",
+    "crumbs": [
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Casting Rays</span>"
+    ]
+  },
+  {
+    "objectID": "05_raytracing.html#intersection-the-sphere",
+    "href": "05_raytracing.html#intersection-the-sphere",
+    "title": "Casting Rays",
+    "section": "Intersection: The Sphere",
+    "text": "Intersection: The Sphere\nOur scene comprises spheres. To check if a ray hits a sphere, we use algebra. A sphere is defined as all points at a distance \\(r\\) from a centre point \\(C\\).\nIf we shoot a line, we solve a quadratic equation to find intersection:\n\\[ t = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} \\]\nThis is implemented in Scene.trace within src/engine.js.\n/* src/engine.js */\ntrace: function(ro, rd) {\n    // ...\n    // The Discriminant (d) tells us if we hit.\n1    const d = b * b - c;\n2    if (d &gt; 0) {\n        // We hit the sphere!\n    }\n}\n\n1\n\nCalculates the discriminant \\(b^2 - 4ac\\).\n\n2\n\nIf positive, the line crosses the sphere. If negative, it misses.",
+    "crumbs": [
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Casting Rays</span>"
+    ]
+  },
+  {
+    "objectID": "05_raytracing.html#injection",
+    "href": "05_raytracing.html#injection",
+    "title": "Casting Rays",
+    "section": "Injection",
+    "text": "Injection\nWhen a ray strikes a light source, we “inject” that energy into our fluid grid (State.lattice). This initiates our fluid simulation.",
+    "crumbs": [
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>Casting Rays</span>"
+    ]
+  },
+  {
+    "objectID": "06_fluids.html",
+    "href": "06_fluids.html",
+    "title": "Simulating Fluids",
+    "section": "",
+    "text": "The Fluid Analogy\nThis is the engine’s heart. After injecting light energy into the grid, we treat it as a fluid.",
+    "crumbs": [
+      "<span class='chapter-number'>6</span>  <span class='chapter-title'>Simulating Fluids</span>"
+    ]
+  },
+  {
+    "objectID": "06_fluids.html#the-fluid-analogy",
+    "href": "06_fluids.html#the-fluid-analogy",
+    "title": "Simulating Fluids",
+    "section": "",
+    "text": "Light Intensity \\(\\approx\\) Fluid Pressure (Quantity)\nLight Direction \\(\\approx\\) Fluid Velocity (Flow direction)",
+    "crumbs": [
+      "<span class='chapter-number'>6</span>  <span class='chapter-title'>Simulating Fluids</span>"
+    ]
+  },
+  {
+    "objectID": "06_fluids.html#cellular-automata",
+    "href": "06_fluids.html#cellular-automata",
+    "title": "Simulating Fluids",
+    "section": "Cellular Automata",
+    "text": "Cellular Automata\nWe use Cellular Automata (CA). Imagine a checkerboard where every square observes its neighbours to determine its next state.\n\n1. Advection (Movement)\nIf a pixel has velocity pointing Right, it pushes its energy to the Right neighbour.\n\n\n2. Diffusion (Spreading)\nEven without velocity, energy spreads. This creates soft shadows and ambient occlusion.",
+    "crumbs": [
+      "<span class='chapter-number'>6</span>  <span class='chapter-title'>Simulating Fluids</span>"
+    ]
+  },
+  {
+    "objectID": "06_fluids.html#interactive-simulation",
+    "href": "06_fluids.html#interactive-simulation",
+    "title": "Simulating Fluids",
+    "section": "Interactive Simulation",
+    "text": "Interactive Simulation\nBelow is a live version of the fluid logic running in this book.\n\n\n\nCode\nviewof dissipation = Inputs.range([0.8, 0.999], {value: 0.98, step: 0.001, label: \"Dissipation (Entropy)\"})\nviewof advection = Inputs.range([0.0, 5.0], {value: 3.0, step: 0.1, label: \"Advection Strength\"})\nviewof diffusion = Inputs.range([0.0, 1.0], {value: 0.5, step: 0.05, label: \"Diffusion (Spread)\"})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCode\nmd`\n**Current Configuration:**\n*   **Energy Conservation:** ${(dissipation * 100).toFixed(1)}% energy retained per tick\n*   **Flow Velocity:** ${advection.toFixed(1)} pixels/tick impact\n*   **Scatter:** ${(diffusion * 100).toFixed(1)}% distribution to neighbours\n`\n\n\n\n\n\n\n\n\n\nCode\nfunction simulate1D(steps, disp, adv, diff) {\n  const width = 100;\n  let grid =  new Float32Array(width * 2).fill(0);\n  let nextGrid = new Float32Array(width * 2).fill(0);\n\n  // Initial Impulse\n  grid[20 * 2] = 2.0; \n  grid[20 * 2 + 1] = 1.0; \n\n  let history = [];\n\n  for(let t=0; t&lt;steps; t++) {\n    for(let x=0; x&lt;width; x++) {\n      const idx = x * 2;\n      let energy = grid[idx];\n      let velocity = grid[idx+1];\n\n      if(energy &lt; 0.01) continue;\n\n      // 1. Advection (Movement)\n      let thrust = velocity * adv;\n      let targetX = Math.min(width-1, Math.max(0, Math.round(x + thrust)));\n      \n      // 2. Diffusion (Spreading)\n      let remain = energy * (1 - diff);\n      let spread = energy * diff;\n\n      // Update Next State with Dissipation\n      nextGrid[targetX * 2] += remain * disp;\n      if(targetX + 1 &lt; width) nextGrid[(targetX + 1) * 2] += (spread / 2) * disp;\n      if(targetX - 1 &gt;= 0)    nextGrid[(targetX - 1) * 2] += (spread / 2) * disp;\n\n      // Decay Velocity (Viscosity)\n      nextGrid[targetX * 2 + 1] += velocity * 0.9;\n    }\n\n    for(let i=0; i&lt;width*2; i++) { grid[i] = nextGrid[i]; nextGrid[i] = 0; }\n    \n    let row = new Float32Array(width);\n    for(let i=0; i&lt;width; i++) row[i] = grid[i*2];\n    history.push(Array.from(row));\n  }\n  return history;\n}\n\ndata = simulate1D(60, dissipation, advection, diffusion)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nVisualisationRaw Data\n\n\n\n\nCode\nPlot.plot({\n  marks: [\n    Plot.raster(data.flat(), { width: 100, height: 60, fill: d =&gt; d, interpolate: \"nearest\" }),\n    Plot.frame()\n  ],\n  color: { scheme: \"magma\", domain: [0, 2] },\n  y: { label: \"Time (t) ↓\", reverse: true },\n  x: { label: \"Space (x) →\" },\n  height: 300\n})\n\n\n\n\n\n\n\n\n\n\n\nCode\nInputs.table(data, { rows: 15 })",
+    "crumbs": [
+      "<span class='chapter-number'>6</span>  <span class='chapter-title'>Simulating Fluids</span>"
+    ]
+  },
+  {
+    "objectID": "06_fluids.html#surface-continuity-check",
+    "href": "06_fluids.html#surface-continuity-check",
+    "title": "Simulating Fluids",
+    "section": "Surface Continuity Check",
+    "text": "Surface Continuity Check\nIn a 2D grid, light might accidentally “bleed” from a foreground object onto a background one. We prevent this with a Surface Continuity Check.\nWe examine the Depth (distance from the camera) of two pixels. A large difference implies distinct objects, so we block the flow of light between them.\n/* src/engine.js */\nconst depthDiff = Math.abs(\n  State.lattice[ptr + FIELD.DEPTH] - State.lattice[nPtr + FIELD.DEPTH]\n);\n\nif (depthDiff &lt; 0.5) {\n  // Surfaces are connected! Flow energy.\n  State.lattice[nPtr + FIELD.R] += State.lattice[ptr + FIELD.R] * transfer;\n}",
+    "crumbs": [
+      "<span class='chapter-number'>6</span>  <span class='chapter-title'>Simulating Fluids</span>"
+    ]
+  },
+  {
+    "objectID": "07_mainloop.html",
+    "href": "07_mainloop.html",
+    "title": "The Main Loop",
+    "section": "",
+    "text": "Animation\nWe have the canvas, memory, mathematics, and physics. Now, we bring them to life.\nAnimation is an illusion. By updating the screen 60 times per second (60 Hz), we trick the eye into seeing motion.\nJavaScript provides requestAnimationFrame. This instructs the browser: “When ready to paint the screen, call my function first.”",
+    "crumbs": [
+      "<span class='chapter-number'>7</span>  <span class='chapter-title'>The Main Loop</span>"
+    ]
+  },
+  {
+    "objectID": "07_mainloop.html#animation",
+    "href": "07_mainloop.html#animation",
+    "title": "The Main Loop",
+    "section": "",
+    "text": "Why not setInterval? Because requestAnimationFrame pauses when you switch tabs, saving battery!",
+    "crumbs": [
+      "<span class='chapter-number'>7</span>  <span class='chapter-title'>The Main Loop</span>"
+    ]
+  },
+  {
+    "objectID": "07_mainloop.html#system-architecture",
+    "href": "07_mainloop.html#system-architecture",
+    "title": "The Main Loop",
+    "section": "System Architecture",
+    "text": "System Architecture\nBefore viewing the code, let us observe the “Big Picture”. The engine runs in three phases:\n\n\n\n\n\ngraph LR\n    A[Input Scene] --&gt;|Ray Query| B(Injection Phase)\n    B --&gt;|Energy| C{Fluid Solver}\n    C --&gt;|Advection| C\n    C --&gt;|Diffusion| C\n    C --&gt;|State| D[Renderer]\n    D --&gt;|Tone Map| E[Canvas]",
+    "crumbs": [
+      "<span class='chapter-number'>7</span>  <span class='chapter-title'>The Main Loop</span>"
+    ]
+  },
+  {
+    "objectID": "07_mainloop.html#the-game-loop",
+    "href": "07_mainloop.html#the-game-loop",
+    "title": "The Main Loop",
+    "section": "The Game Loop",
+    "text": "The Game Loop\nOur mainSimulationLoop acts as the orchestra’s conductor. It runs continuously, coordinating all discussed components.\nfunction mainSimulationLoop() {\n  // 1. Handle Input (Keyboard/Mouse)\n  if (handleInput()) {\n      // If the user moved, we might need to reset\n  }\n\n  // 2. Injection Phase (Ray Tracing)\n  // We shoot rays for every pixel (or a subset)\n  // ...\n\n  // 3. Propagation Phase (Fluid Dynamics)\n  evolveSimulation();\n\n  // 4. Rendering Phase\n  // Draw the result to the Canvas\n  // ...\n\n  // 5. Repeat!\n  requestAnimationFrame(mainSimulationLoop);\n}",
+    "crumbs": [
+      "<span class='chapter-number'>7</span>  <span class='chapter-title'>The Main Loop</span>"
+    ]
+  },
+  {
+    "objectID": "07_mainloop.html#conclusion",
+    "href": "07_mainloop.html#conclusion",
+    "title": "The Main Loop",
+    "section": "Conclusion",
+    "text": "Conclusion\nWe have journeyed from the humble pixel to a complex, hybrid fluid-light transport simulation.\nBy treating light as a fluid, we create beautiful, organic lighting effects that respond to the environment in real-time. We optimised this by understanding computer memory (SoA) and employing simplified physics (Cellular Automata) rather than calculating every single photon perfectly.\nFurthermore, our engine now monitors Grid Sparsity—the ratio of active light regions to empty space. This telemetry allows us to gauge efficiency and ensure we only process pixels that truly matter.\nThis is the power of the Hybrid Fluid-Light Transport Engine.",
+    "crumbs": [
+      "<span class='chapter-number'>7</span>  <span class='chapter-title'>The Main Loop</span>"
+    ]
+  }
+]
