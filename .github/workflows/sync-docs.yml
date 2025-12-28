@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
@@ -39,12 +39,12 @@ jobs:
         working-directory: garden
         run: |
           mkdir -p content/fluid-light-transport
-          mkdir -p static/fluid-book
+          mkdir -p quartz/static/fluid-book
 
       - name: Synchronise Static Assets
         run: |
           # Copy the built Quarto site to the static folder of the garden
-          cp -r fluid/docs/_site/* garden/static/fluid-book/
+          cp -r fluid/docs/_site/* garden/quartz/static/fluid-book/
 
       - name: Run Conversion Script
         run: |
@@ -57,7 +57,7 @@ jobs:
         run: |
           git config user.name "Garden Bot"
           git config user.email "bot@digitalgarden.io"
-          git add content/fluid-light-transport static/fluid-book
+          git add content/fluid-light-transport quartz/static/fluid-book
           # Commit using conventional commits
           git commit -m "feat(content): synchronise fluid-light-transport docs" || echo "No changes to commit"
           git push
