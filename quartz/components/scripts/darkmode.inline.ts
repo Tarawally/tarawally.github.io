@@ -15,7 +15,24 @@ const emitThemeChangeEvent = (theme: "light" | "dark") => {
   })
 }
 
+window.addEventListener("message", (e) => {
+  if (e.data && e.data.type === "resize" && e.data.height) {
+    const iframes = document.querySelectorAll("iframe")
+    iframes.forEach((iframe) => {
+      if (iframe.contentWindow === e.source) {
+        iframe.style.height = e.data.height + "px"
+      }
+    })
+  }
+})
+
 document.addEventListener("nav", () => {
+  const currentTheme = document.documentElement.getAttribute("saved-theme") as "light" | "dark"
+  const iframes = document.querySelectorAll("iframe")
+  iframes.forEach((iframe) => {
+    iframe.contentWindow?.postMessage({ type: "themechange", theme: currentTheme }, "*")
+  })
+
   const switchTheme = () => {
     const newTheme =
       document.documentElement.getAttribute("saved-theme") === "dark" ? "light" : "dark"

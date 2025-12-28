@@ -348,6 +348,42 @@ window.Quarto = {
 </section>
 
 </main> <!-- /main -->
+(function() {
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.body.classList.add('quarto-dark');
+      document.body.classList.remove('quarto-light');
+    } else {
+      document.body.classList.add('quarto-light');
+      document.body.classList.remove('quarto-dark');
+    }
+  }
+
+  function reportHeight() {
+    const height = document.body.scrollHeight;
+    window.parent.postMessage({ type: 'resize', height: height }, '*');
+  }
+
+  window.addEventListener('message', function(event) {
+    if (event.data &amp;&amp; event.data.type === 'themechange') {
+      applyTheme(event.data.theme);
+    }
+  });
+
+  // Initial check for theme and embedded mode
+  const params = new URLSearchParams(window.location.search);
+  const initialTheme = params.get('theme');
+  if (initialTheme) applyTheme(initialTheme);
+  
+  if (params.get('embedded') === 'true' || window.parent !== window) {
+    document.body.classList.add('embedded');
+  }
+
+  // Report height on load and resize
+  window.addEventListener('load', reportHeight);
+  const observer = new ResizeObserver(reportHeight);
+  observer.observe(document.body);
+})();
 <script type="ojs-module-contents">
 eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6InZpZXdvZiB2ZWN0b3JYID0gSW5wdXRzLnJhbmdlKFstMSwgMV0sIHt2YWx1ZTogMSwgc3RlcDogMC4xLCBsYWJlbDogXCJYXCJ9KVxudmlld29mIHZlY3RvclkgPSBJbnB1dHMucmFuZ2UoWy0xLCAxXSwge3ZhbHVlOiAwLjUsIHN0ZXA6IDAuMSwgbGFiZWw6IFwiWVwifSlcblxuUGxvdC5wbG90KHtcbiAgZ3JpZDogdHJ1ZSxcbiAgeDoge2RvbWFpbjogWy0yLCAyXX0sXG4gIHk6IHtkb21haW46IFstMiwgMl19LFxuICBtYXJrczogW1xuICAgIFBsb3QuZnJhbWUoKSxcbiAgICBQbG90LmFycm93KFt7eDE6IDAsIHkxOiAwLCB4MjogdmVjdG9yWCwgeTI6IHZlY3Rvcll9XSwge3gxOiBcIngxXCIsIHkxOiBcInkxXCIsIHgyOiBcIngyXCIsIHkyOiBcInkyXCIsIHN0cm9rZTogXCJyZWRcIiwgc3Ryb2tlV2lkdGg6IDN9KSxcbiAgICBQbG90LnRleHQoW3t4OiB2ZWN0b3JYLCB5OiB2ZWN0b3JZfV0sIHt0ZXh0OiBgKCR7dmVjdG9yWH0sICR7dmVjdG9yWX0pYCwgZHk6IC0xMH0pXG4gIF1cbn0pXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6InNoaW55SW5wdXQoJ3ZlY3RvclgnKSJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoic2hpbnlJbnB1dCgndmVjdG9yWScpIn1dfQ==
 </script>

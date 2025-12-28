@@ -363,6 +363,42 @@ window.Quarto = {
 </section>
 
 </main> <!-- /main -->
+(function() {
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.body.classList.add('quarto-dark');
+      document.body.classList.remove('quarto-light');
+    } else {
+      document.body.classList.add('quarto-light');
+      document.body.classList.remove('quarto-dark');
+    }
+  }
+
+  function reportHeight() {
+    const height = document.body.scrollHeight;
+    window.parent.postMessage({ type: 'resize', height: height }, '*');
+  }
+
+  window.addEventListener('message', function(event) {
+    if (event.data &amp;&amp; event.data.type === 'themechange') {
+      applyTheme(event.data.theme);
+    }
+  });
+
+  // Initial check for theme and embedded mode
+  const params = new URLSearchParams(window.location.search);
+  const initialTheme = params.get('theme');
+  if (initialTheme) applyTheme(initialTheme);
+  
+  if (params.get('embedded') === 'true' || window.parent !== window) {
+    document.body.classList.add('embedded');
+  }
+
+  // Report height on load and resize
+  window.addEventListener('load', reportHeight);
+  const observer = new ResizeObserver(reportHeight);
+  observer.observe(document.body);
+})();
 <script type="ojs-module-contents">
 eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6IlBsb3QucGxvdCh7XG4gIGdyaWQ6IHRydWUsXG4gIHg6IHtheGlzOiBcInRvcFwiLCBsYWJlbDogXCJYIEF4aXMg4oaSXCJ9LFxuICB5OiB7YXhpczogXCJsZWZ0XCIsIGxhYmVsOiBcIuKGkyBZIEF4aXNcIn0sXG4gIGRvbWFpbjogWzAsIDEwXSxcbiAgbWFya3M6IFtcbiAgICBQbG90LmZyYW1lKCksXG4gICAgUGxvdC50ZXh0KFt7eDogMSwgeTogMX1dLCB7dGV4dDogXCIoMSwgMSlcIiwgeDogXCJ4XCIsIHk6IFwieVwiLCBkeDogMTUsIGR5OiAxNX0pLFxuICAgIFBsb3QuZG90KFt7eDogMSwgeTogMX1dLCB7eDogXCJ4XCIsIHk6IFwieVwiLCBmaWxsOiBcInJlZFwiLCByOiA1fSksXG4gICAgUGxvdC50ZXh0KFt7eDogNSwgeTogNX1dLCB7dGV4dDogXCIoNSwgNSlcIiwgeDogXCJ4XCIsIHk6IFwieVwiLCBkeDogMTUsIGR5OiAxNX0pLFxuICAgIFBsb3QuZG90KFt7eDogNSwgeTogNX1dLCB7eDogXCJ4XCIsIHk6IFwieVwiLCBmaWxsOiBcImJsdWVcIiwgcjogNX0pXG4gIF1cbn0pXG4ifV19
 </script>

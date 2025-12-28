@@ -3,6 +3,6 @@ title: The Language of Logic
 weight: 3
 ---
 
-<iframe src="/static/fluid-light-transport/02_logic.html" width="100%" height="800px" frameborder="0"></iframe>
+<iframe src="/static/fluid-light-transport/02_logic.html?embedded=true" width="100%" frameborder="0"></iframe>
 
 [View Full Screen](/static/fluid-light-transport/02_logic.html)
