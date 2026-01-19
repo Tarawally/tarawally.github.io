@@ -10,18 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Digital Garden
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           path: garden
 
       - name: Checkout Fluid Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: Tarawally/fluid-light-transport
           path: fluid
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: "18"
 
